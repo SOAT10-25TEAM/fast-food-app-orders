@@ -1,0 +1,54 @@
+networks:
+  soatdb:
+
+services:
+  db:
+    image: mysql
+    tty: true
+    container_name: db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: soat
+      MYSQL_PASSWORD: soat
+      MYSQL_DATABASE: soat_desafio
+    networks:
+      - soatdb
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "--host=localhost",
+          "--user=root",
+          "--password=root",
+        ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 20s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - MYSQL_HOST=db
+      - MYSQL_USER=soat
+      - MYSQL_PASSWORD=soat
+      - MYSQL_DATABASE=soat_desafio
+    networks:
+      - soatdb
+    tty: true
+    depends_on:
+      db:
+        condition: service_healthy

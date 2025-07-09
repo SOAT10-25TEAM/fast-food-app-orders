@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-job
+spec:
+  completions: 1
+  parallelism: 1
+  template:
+    spec:
+      initContainers:
+        - name: wait-for-db
+          image: busybox
+          command:
+            [
+              "sh",
+              "-c",
+              'until nc -z -v -w30 mysql-service 3306; do echo "Waiting for database..."; sleep 5; done',
+            ]
+      containers:
+        - name: migrate
+          image: ghcr.io/dougb60/node-image:latest
+          command:
+            [
+              "node",
+              "-e",
+              "import('/app/dist/external/typeORM/config.js').then(({ AppDataSource }) => AppDataSource.initialize().then(() => AppDataSource.runMigrations()).then(() => process.exit(0))).catch((err) => { console.error(err); process.exit(1); });",
+            ]
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
+      restartPolicy: Never
