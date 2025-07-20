@@ -6,6 +6,7 @@ import {
   OrderRepository,
 } from "../interfaces/repositories";
 import { getProductById } from "../../clients/products-api-client";
+import { getUserById } from "../../clients/users-api-client";
 
 export class OrderUseCase {
   static async createOrder(
@@ -13,6 +14,12 @@ export class OrderUseCase {
     repository: OrderRepository,
   ): Promise<Order | null> {
     try {
+      const foundUser = await getUserById(orderData.userId);
+
+      if (!foundUser) {
+        throw new BusinessError("Cliente não encontrado!", 404);
+      }
+
       const itemsArray: {
         productId: number;
         quantity: number;

@@ -10,7 +10,7 @@ export const AppDataSource = new DataSource({
   port: 3306,
   username: process.env.MYSQL_USER,
   password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE || "soat_desafio",
+  database: process.env.MYSQL_DATABASE || "soat_orders",
   logging: true,
   synchronize: false,
   entities: [
