@@ -11,7 +11,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_USER: soat
       MYSQL_PASSWORD: soat
-      MYSQL_DATABASE: soat_desafio
+      MYSQL_DATABASE: soat_orders
     networks:
       - soatdb
     ports:
@@ -45,7 +45,7 @@ services:
       - MYSQL_HOST=db
       - MYSQL_USER=soat
       - MYSQL_PASSWORD=soat
-      - MYSQL_DATABASE=soat_desafio
+      - MYSQL_DATABASE=soat_orders
     networks:
       - soatdb
     tty: true
