@@ -7,7 +7,6 @@ import {
 } from "../interfaces/dtos";
 import { OrderJsonPresenter } from "../presenters/orderPresenter";
 import { OrderGateway } from "../gateways/orderGateway";
-import { ProductGateway } from "../../Product/gateways/productGateway";
 import { generateCode } from "../../utils/functions";
 import { z } from "zod";
 import { PaymentGateway } from "../gateways/paymentMock";
@@ -19,7 +18,6 @@ export const orderRoutes = (dbConnection: any): Router => {
 
   const orderRepository = new OrderGateway(dbConnection);
   const orderPresenter = new OrderJsonPresenter();
-  const productRepository = new ProductGateway(dbConnection);
   const paymentRepository = new PaymentGateway(
     process.env.WEBHOOK_URL ||
       "http://localhost:3002/soat-api/order/payment-webhook"
@@ -45,6 +43,9 @@ export const orderRoutes = (dbConnection: any): Router => {
    *           schema:
    *             type: object
    *             properties:
+   *               userId:
+   *                 type: number  
+   *                 example: 1
    *               orderDate:
    *                 type: string
    *                 format: date-time
@@ -81,6 +82,9 @@ export const orderRoutes = (dbConnection: any): Router => {
    *                     id:
    *                       type: number
    *                       example: 2
+   *                     userId:
+   *                       type: number  
+   *                       example: 1
    *                     orderDate:
    *                       type: string
    *                       format: date-time
@@ -118,7 +122,6 @@ export const orderRoutes = (dbConnection: any): Router => {
       const response = await OrderController.createOrder(
         { ...orderData, code: generateCode() },
         orderRepository,
-        productRepository,
         orderPresenter
       );
 
@@ -231,6 +234,9 @@ export const orderRoutes = (dbConnection: any): Router => {
    *                     type: object
    *                     properties:
    *                       id:
+   *                         type: number
+   *                         example: 1
+   *                       userId:
    *                         type: number
    *                         example: 1
    *                       orderDate:

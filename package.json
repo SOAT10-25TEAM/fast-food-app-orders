@@ -12,6 +12,7 @@
     "k8s:run": "yarn k8s:apply && kubectl rollout restart deployment/soat-app && kubectl rollout status deployment/soat-app --timeout=320s && echo 'serviço disponível em http://localhost:3002/ e documentacao em http://localhost:3002/api-docs' && sudo minikube tunnel"
   },
   "devDependencies": {
+    "@types/axios": "^0.14.4",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.9",
@@ -23,7 +24,7 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "axios": "^1.8.3",
+    "axios": "^1.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "esbuild-wasm": "^0.24.2",

@@ -1,18 +1,16 @@
 import { Order } from "../entities/order";
-
-import { ProductRepository } from "../../Product/interfaces/repositories";
 import { BusinessError } from "../../utils/errors";
 import { CreateOrderRequestDTO, PaymentWebhookDTO } from "../interfaces/dtos";
 import {
   MockPaymentRepository,
   OrderRepository,
 } from "../interfaces/repositories";
+import { getProductById } from "../../clients/products-api-client";
 
 export class OrderUseCase {
   static async createOrder(
     orderData: CreateOrderRequestDTO,
     repository: OrderRepository,
-    productRepository: ProductRepository
   ): Promise<Order | null> {
     try {
       const itemsArray: {
@@ -20,8 +18,10 @@ export class OrderUseCase {
         quantity: number;
         price: number;
       }[] = [];
+
       for (const item of orderData.items) {
-        const foundProduct = await productRepository.findById(item.productId);
+        const foundProduct = await getProductById(item.productId);
+
         if (!foundProduct) {
           throw new BusinessError("Produto não encontrado!", 404);
         }
@@ -42,12 +42,13 @@ export class OrderUseCase {
         items: itemsArray,
         totalPrice,
         code: orderData.code,
+        userId: orderData.userId,
       });
     } catch (error) {
       throw error;
     }
   }
-
+  
   static async listOrders(repository: OrderRepository): Promise<Order[]> {
     try {
       const orders = await repository.listOrders();

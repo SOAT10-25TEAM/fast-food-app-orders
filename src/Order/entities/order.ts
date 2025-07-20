@@ -2,6 +2,7 @@ import { OrderItem } from "./orderItem";
 
 export class Order {
   private _id: number;
+  private _userId: number;
   private _orderDate: Date;
   private _status: string;
   private _items: OrderItem[];
@@ -11,6 +12,7 @@ export class Order {
 
   private constructor(
     id: number,
+    userId: number,
     orderDate: Date,
     status: string,
     items: OrderItem[],
@@ -19,6 +21,7 @@ export class Order {
     paymentStatus: string
   ) {
     this._id = id;
+    this._userId = userId;
     this._orderDate = orderDate;
     this._status = status;
     this._items = items;
@@ -29,6 +32,7 @@ export class Order {
 
   static create(
     id?: number,
+    userId?: number,
     orderDate?: Date,
     status?: string,
     items?: OrderItem[],
@@ -36,11 +40,12 @@ export class Order {
     code?: string,
     paymentStatus: string = "PENDING"
   ): Order | null {
-    if (!id || !orderDate || !status || !items || !totalPrice || !code) {
+    if (!id || !userId || !orderDate || !status || !items || !totalPrice || !code) {
       return null;
     }
     return new Order(
       id,
+      userId,
       orderDate,
       status,
       items,
@@ -52,6 +57,9 @@ export class Order {
 
   get id(): number {
     return this._id;
+  }
+  get userId(): number {
+    return this._userId;
   }
   get code(): string {
     return this._code;

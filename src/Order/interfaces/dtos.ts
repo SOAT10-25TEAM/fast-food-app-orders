@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export interface CreateOrderRequestDTO {
+  userId: number;
   orderDate: string;
   status: string;
   code: string;
@@ -13,6 +14,7 @@ export interface CreateOrderRequestDTO {
 
 export interface OrderResponseDTO {
   id: number;
+  userId: number;
   orderDate: Date;
   status: string;
   items: { productId: number; quantity: number }[];
@@ -30,8 +32,9 @@ export interface PaymentWebhookDTO {
 export const CreateOrdertValidator = {
   validate(
     input: any
-  ): Pick<CreateOrderRequestDTO, "orderDate" | "status" | "items"> {
+  ): Pick<CreateOrderRequestDTO, "userId" | "orderDate" | "status" | "items"> {
     const schema = z.object({
+      userId: z.number(),
       orderDate: z.string().nonempty("Nome do produto obrigatório"),
       status: z.enum(["RECEBIDO", "PREPARACAO", "PRONTO", "FINALIZADO"]),
       items: z
