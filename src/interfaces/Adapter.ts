@@ -10,10 +10,6 @@ export interface APIResponse<T> {
   };
 }
 
-export interface DeletedProductResponse {
-  id: number | string;
-}
-
 export interface BaseDataPresenter<DataType, ResponseType> {
   toJSON(data: DataType): ResponseType;
   toResponse(
@@ -31,8 +27,4 @@ export interface ListableDataPresenter<DataType, ResponseType>
     message?: string
   ): APIResponse<ResponseType[]>;
 
-  toResponseDeleted?(
-    data: number | string,
-    message?: string
-  ): APIResponse<DeletedProductResponse>;
 }

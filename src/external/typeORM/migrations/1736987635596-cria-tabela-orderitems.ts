@@ -51,17 +51,6 @@ export class CreateOrderItemsTable1670000000005 implements MigrationInterface {
         onUpdate: "CASCADE",
       })
     );
-
-    await queryRunner.createForeignKey(
-      "order_items",
-      new TableForeignKey({
-        columnNames: ["product_id"],
-        referencedTableName: "products",
-        referencedColumnNames: ["id"],
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
-      })
-    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -69,9 +58,7 @@ export class CreateOrderItemsTable1670000000005 implements MigrationInterface {
     if (table) {
       const foreignKeys = table.foreignKeys.filter(
         (fk) =>
-          fk.columnNames.includes("order_id") ||
-          fk.columnNames.includes("product_id")
-      );
+          fk.columnNames.includes("order_id")      );
       for (const fk of foreignKeys) {
         await queryRunner.dropForeignKey("order_items", fk);
       }

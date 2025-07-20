@@ -8,6 +8,7 @@ export class OrderJsonPresenter
   toJSON(order: Order & { totalPrice: number }): OrderResponseDTO {
     return {
       id: order.id,
+      userId: order.userId,
       orderDate: order.orderDate,
       status: order.status,
       items: order.items,

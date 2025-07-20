@@ -16,6 +16,7 @@ export class OrderGateway implements OrderRepository {
     order: CreateOrderRequestDTO & { totalPrice: number }
   ): Promise<Order | null> {
     const orderData = {
+      userId: order.userId,
       orderDate: order.orderDate,
       status: order.status,
       code: order.code,
@@ -24,7 +25,7 @@ export class OrderGateway implements OrderRepository {
         quantity: item.quantity,
         price: item.price,
         product: { id: item.productId },
-      })),
+      }))
     };
 
     const result = await this.dbConnection.save(
@@ -34,6 +35,7 @@ export class OrderGateway implements OrderRepository {
 
     return Order.create(
       result?.id,
+      result?.userId,
       result?.orderDate,
       result?.status,
       result?.items,
@@ -73,6 +75,7 @@ export class OrderGateway implements OrderRepository {
 
         return Order.create(
           order?.id,
+          order?.userId,
           order?.orderDate,
           order?.status,
           items,
@@ -105,6 +108,7 @@ export class OrderGateway implements OrderRepository {
 
     return Order.create(
       result?.id,
+      result?.userId,
       result?.orderDate,
       result?.status,
       items,
@@ -135,6 +139,7 @@ export class OrderGateway implements OrderRepository {
 
     return Order.create(
       result?.id,
+      result?.userId,
       result?.orderDate,
       result?.status,
       items,

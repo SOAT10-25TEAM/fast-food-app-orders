@@ -1,4 +1,3 @@
-import { ProductRepository } from "../../Product/interfaces/repositories";
 import { CreateOrderRequestDTO, PaymentWebhookDTO } from "../interfaces/dtos";
 import {
   MockPaymentRepository,
@@ -11,13 +10,11 @@ export class OrderController {
   static async createOrder(
     orderData: CreateOrderRequestDTO,
     repository: OrderRepository,
-    productRepository: ProductRepository,
     presenter: OrderJsonPresenter
   ) {
     const order = await OrderUseCase.createOrder(
       orderData,
-      repository,
-      productRepository
+      repository
     );
 
     return presenter.toResponse(order, "Pedido criado com sucesso", true);

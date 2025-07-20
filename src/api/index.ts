@@ -2,8 +2,6 @@ import { HTTPServer } from "../interfaces/HTTPServer";
 import express, { Express } from "express";
 import { swaggerRouter } from "./middlewares/swaggerMiddleware";
 import { DBConnection } from "../interfaces/DBConnection";
-import { userRoutes } from "../User/routes";
-import { productRoutes } from "../Product/routes";
 import { orderRoutes } from "../Order/routes";
 import { errorHandler } from "./middlewares/errorHandler";
 
@@ -20,8 +18,6 @@ export class ExpressServer implements HTTPServer {
   }
 
   registerRoutes(): void {
-    this.app.use("/soat-api", userRoutes(this.dbConnection));
-    this.app.use("/soat-api", productRoutes(this.dbConnection));
     this.app.use("/soat-api", orderRoutes(this.dbConnection));
 
     this.app.use(swaggerRouter);

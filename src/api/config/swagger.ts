@@ -4,19 +4,17 @@ const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Grupo 67",
+      title: "Grupo 25",
       version: "1.0.0",
-      description: "Documentação da API do segundo desafio",
+      description: "Documentação da API do quarto desafio",
     },
     servers: [
       {
-        url: "http://localhost:3002/soat-api",
+        url: "http://localhost:3002/fastfood-orders-api",
       },
     ],
   },
   apis: [
-    "./src/User/routes/*.ts",
-    "./src/Product/routes/*.ts",
     "./src/Order/routes/*.ts",
   ],
 };
