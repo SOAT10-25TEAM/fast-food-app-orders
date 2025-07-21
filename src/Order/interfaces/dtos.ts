@@ -29,6 +29,15 @@ export interface PaymentWebhookDTO {
   orderStatus: "RECEBIDO" | "PREPARACAO" | "PRONTO" | "FINALIZADO";
 }
 
+export interface ProcessPaymentResponseDTO {
+  paymentId: string;
+  orderId: string;
+  status: "APPROVED" | "REJECTED";
+  amount: number;
+  createdAt: string;
+  processedAt: string;
+}
+
 export const CreateOrdertValidator = {
   validate(
     input: any
