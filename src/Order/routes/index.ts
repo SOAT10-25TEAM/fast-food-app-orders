@@ -432,7 +432,91 @@ export const orderRoutes = (dbConnection: any): Router => {
       }
     }
   );
+/**
+ * @swagger
+ * /order/payment/{code}:
+ *   post:
+ *     summary: Processar pagamento de um pedido
+ *     description: Envia o código do pedido e o valor do pagamento para a API de pagamentos e processa a transação.
+ *     tags:
+ *       - Order
+ *     parameters:
+ *       - in: path
+ *         name: code
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Código do pedido a ser pago.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 description: Valor do pagamento (deve ser maior que zero).
+ *                 example: 49.90
+ *     responses:
+ *       200:
+ *         description: Pagamento processado com sucesso.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   description: Dados retornados pela API de pagamento.
+ *       400:
+ *         description: Requisição inválida (ex: parâmetros faltando ou inválidos).
+ *       500:
+ *         description: Erro interno do servidor ao processar o pagamento.
+*/
 
+  orderRoutes.post("/order/payment/:code",
+    async (req, res, next) => {
+      try {
+        const orderCode = req.params.code;
+        const amount = req.body.amount;
+
+        if (!orderCode) {
+          throw new z.ZodError([
+            {
+              code: z.ZodIssueCode.custom,
+              message: "Código do item Obrigatório!",
+              path: ["code"],
+            },
+          ]);
+        }
+
+        if (typeof amount !== "number" || amount <= 0) {
+          throw new z.ZodError([
+            {
+              code: z.ZodIssueCode.custom,
+              message: "Valor precisa ser maior que zero!",
+              path: ["amount"],
+            },
+          ]);
+        }
+
+        const response = await OrderController.executePaymentAPI(
+          { code: orderCode, amount },
+          orderPresenter
+        );
+        res.status(response?.statusCode || 200).json({ ...response?.body });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
   /**
    * @swagger
    * /order/payment-webhook:

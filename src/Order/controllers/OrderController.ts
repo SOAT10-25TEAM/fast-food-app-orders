@@ -5,6 +5,9 @@ import {
 } from "../interfaces/repositories";
 import { OrderJsonPresenter } from "../presenters/orderPresenter";
 import { OrderUseCase } from "../useCases/orderUseCase";
+import { postProcessPayment} from "../../clients/payment-api-client";
+import { ProcessPaymentResponseDTO } from "../interfaces/dtos";
+
 
 export class OrderController {
   static async createOrder(
@@ -62,6 +65,27 @@ export class OrderController {
       return presenter.toResponse(
         null,
         "Status do pedido atualizado com sucesso"
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+
+  // 🚀 Novo método para executar a API de pagamento
+  static async executePaymentAPI(
+    {
+      code,
+      amount,
+    }: { code: string; amount: number },
+    presenter: OrderJsonPresenter
+  ) {
+    try {
+      const paymentResponse: ProcessPaymentResponseDTO = await postProcessPayment(code, amount);
+
+      return presenter.toResponse(
+        paymentResponse,
+        `Pagamento do pedido ${code} processado com sucesso`
       );
     } catch (error) {
       throw error;
