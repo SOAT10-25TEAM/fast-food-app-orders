@@ -1,0 +1,106 @@
+name: 2-K8s Deploy
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '*.yaml'
+      - '*.yml'
+      - 'k8s/**'
+  push:
+    branches: [ configure_aws_deployment ]
+    paths:
+      - '*.yaml'
+      - '*.yml'
+      - 'k8s/**'
+  workflow_dispatch:  # Manual trigger
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy-k8s:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name fast-food-orders-dev
+          echo "✅ kubectl configured"
+
+      - name: Verify cluster connection
+        run: |
+          kubectl get nodes
+          kubectl get namespaces
+          echo "✅ Cluster is accessible"
+
+      - name: Deploy MySQL
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
+        run: |
+          echo "🗄️ Deploying MySQL..."
+          kubectl apply -f mysql-secrets.yaml
+          kubectl apply -f mysql-deployment.yaml
+          kubectl apply -f mysql-service.yaml
+          echo "✅ MySQL deployed"
+
+      - name: Wait for MySQL to be ready
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
+        run: |
+          echo "⏳ Waiting for MySQL to be ready..."
+          kubectl wait --for=condition=ready pod -l app=mysql --timeout=300s
+          echo "✅ MySQL is ready"
+
+      - name: Deploy Application
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
+        run: |
+          echo "🚀 Deploying Fast Food Orders Application..."
+          kubectl apply -f node-configmap.yaml
+          kubectl apply -f node-deployment.yaml
+          kubectl apply -f node-service.yaml
+          kubectl apply -f node-hpa.yaml
+          echo "✅ Application deployed"
+
+      - name: Wait for application to be ready
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
+        run: |
+          echo "⏳ Waiting for application to be ready..."
+          kubectl wait --for=condition=ready pod -l app=fast-food-orders --timeout=300s
+          echo "✅ Application is ready"
+
+      - name: Show deployment status
+        run: |
+          echo "📋 Deployment Status:"
+          kubectl get pods
+          kubectl get services
+          kubectl get deployments
+          echo ""
+          echo "🌐 Service URLs:"
+          kubectl get service node-service -o wide
+          echo ""
+          echo "🎉 Kubernetes deployment completed!"
+
+      - name: Run basic health check
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
+        run: |
+          echo "🔍 Running basic health checks..."
+          kubectl get pods -l app=fast-food-orders
+          kubectl get pods -l app=mysql
+          
+          # Check if pods are running
+          READY_PODS=$(kubectl get pods -l app=fast-food-orders --no-headers | grep "Running" | wc -l)
+          echo "✅ Fast Food Orders pods running: $READY_PODS"
+          
+          MYSQL_PODS=$(kubectl get pods -l app=mysql --no-headers | grep "Running" | wc -l)
+          echo "✅ MySQL pods running: $MYSQL_PODS"
