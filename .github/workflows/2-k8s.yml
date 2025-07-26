@@ -1,0 +1,165 @@
+name: Deploy to Kubernetes
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '*.yaml'
+      - '*.yml'
+      - 'k8s/**'
+  push:
+    branches: [ configure_aws_deployment ]
+    paths:
+      - '*.yaml'
+      - '*.yml'
+      - 'k8s/**'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy-k8s:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name fast-food-orders
+          echo "✅ kubectl configured"
+
+      - name: Verify cluster connection
+        run: |
+          kubectl get nodes
+          kubectl get namespaces
+          echo "✅ Cluster is accessible"
+
+      - name: List available Kubernetes files
+        run: |
+          echo "📂 Checking for Kubernetes files..."
+          ls -la *.yaml *.yml 2>/dev/null || echo "No YAML files in root directory"
+          ls -la k8s/ 2>/dev/null || echo "No k8s directory found"
+          echo ""
+
+      - name: Deploy MySQL
+        run: |
+          echo "🗄️ Deploying MySQL..."
+          
+          # Try different possible locations for the files
+          if [ -f mysql-secrets.yaml ]; then
+            kubectl apply -f mysql-secrets.yaml
+          elif [ -f k8s/mysql-secrets.yaml ]; then
+            kubectl apply -f k8s/mysql-secrets.yaml
+          else
+            echo "❌ mysql-secrets.yaml not found"
+            exit 1
+          fi
+          
+          if [ -f mysql-deployment.yaml ]; then
+            kubectl apply -f mysql-deployment.yaml
+          elif [ -f k8s/mysql-deployment.yaml ]; then
+            kubectl apply -f k8s/mysql-deployment.yaml
+          else
+            echo "❌ mysql-deployment.yaml not found"
+            exit 1
+          fi
+          
+          if [ -f mysql-service.yaml ]; then
+            kubectl apply -f mysql-service.yaml
+          elif [ -f k8s/mysql-service.yaml ]; then
+            kubectl apply -f k8s/mysql-service.yaml
+          else
+            echo "❌ mysql-service.yaml not found"
+            exit 1
+          fi
+          
+          echo "✅ MySQL deployed"
+
+      - name: Run Database Migrations
+        run: |
+          echo "🗃️ Running database migrations..."
+          kubectl apply -f k8s/migrations-job.yaml
+          kubectl wait --for=condition=complete job/migrate-job --timeout=120s
+          echo "✅ Migrations completed"
+
+      - name: Deploy Application
+        run: |
+          echo "🚀 Deploying Node.js application..."
+          
+          # Apply Node.js manifests
+          if [ -f node-configmap.yaml ]; then
+            kubectl apply -f node-configmap.yaml
+          elif [ -f k8s/node-configmap.yaml ]; then
+            kubectl apply -f k8s/node-configmap.yaml
+          else
+            echo "❌ node-configmap.yaml not found"
+            exit 1
+          fi
+          
+          if [ -f node-deployment.yaml ]; then
+            kubectl apply -f node-deployment.yaml
+          elif [ -f k8s/node-deployment.yaml ]; then
+            kubectl apply -f k8s/node-deployment.yaml
+          else
+            echo "❌ node-deployment.yaml not found"
+            exit 1
+          fi
+          
+          if [ -f node-service.yaml ]; then
+            kubectl apply -f node-service.yaml
+          elif [ -f k8s/node-service.yaml ]; then
+            kubectl apply -f k8s/node-service.yaml
+          else
+            echo "❌ node-service.yaml not found"
+            exit 1
+          fi
+          
+          # Optional: HPA
+          if [ -f node-hpa.yaml ]; then
+            kubectl apply -f node-hpa.yaml
+          elif [ -f k8s/node-hpa.yaml ]; then
+            kubectl apply -f k8s/node-hpa.yaml
+          else
+            echo "⚠️ node-hpa.yaml not found (optional)"
+          fi
+          
+          echo "✅ Application deployed"
+
+      - name: Restart application to pick up config changes
+        run: |
+          echo "🔄 Restarting application to apply configuration changes..."
+          kubectl rollout restart deployment/soat-app
+          kubectl rollout status deployment/soat-app --timeout=300s
+          echo "✅ Application restarted"
+
+      - name: Wait for deployments
+        run: |
+          echo "⏳ Waiting for deployments to be ready..."
+          kubectl wait --for=condition=available --timeout=300s deployment/mysql || true
+          kubectl wait --for=condition=available --timeout=300s deployment/soat-app || true
+          echo "✅ Deployments ready"
+
+      - name: Deployment Status
+        run: |
+          echo "📋 Deployment Status:"
+          kubectl get pods
+          kubectl get services
+          kubectl get deployments
+          echo ""
+          echo "🌐 Service URLs:"
+          kubectl get service node-service -o wide || echo "node-service not found"
+          echo ""
+          echo "🎉 Kubernetes deployment completed!"
+        continue-on-error: true
