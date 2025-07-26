@@ -87,6 +87,13 @@ jobs:
           
           echo "✅ MySQL deployed"
 
+      - name: Run Database Migrations
+        run: |
+          echo "🗃️ Running database migrations..."
+          kubectl apply -f k8s/migrations-job.yaml
+          kubectl wait --for=condition=complete job/migrate-job --timeout=120s
+          echo "✅ Migrations completed"
+
       - name: Deploy Application
         run: |
           echo "🚀 Deploying Node.js application..."
