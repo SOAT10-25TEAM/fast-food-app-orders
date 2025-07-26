@@ -37,7 +37,7 @@ jobs:
 
       - name: Update kubeconfig
         run: |
-          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name fast-food-orders-dev
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name fast-food-orders
           echo "✅ kubectl configured"
 
       - name: Verify cluster connection
