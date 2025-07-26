@@ -72,6 +72,6 @@ jobs:
       - name: Update kubeconfig
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
         run: |
-          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name fast-food-orders-dev
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name fast-food-orders
           kubectl get nodes
           echo "✅ kubectl configured and cluster accessible"

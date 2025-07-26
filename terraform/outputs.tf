@@ -42,11 +42,23 @@ output "node_group_status" {
 # Instructions for connecting to the cluster
 output "kubectl_config_command" {
   description = "Command to configure kubectl"
-  value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${aws_eks_cluster.main.name}"
+  value       = "aws eks update-kubeconfig --region us-east-1 --name ${aws_eks_cluster.main.name}"
 }
 
-# Output the state bucket name for GitHub Actions
-output "terraform_state_bucket" {
-  description = "S3 bucket name for Terraform state"
-  value       = aws_s3_bucket.terraform_state.bucket
+# Debug outputs
+output "all_subnet_ids" {
+  description = "All subnet IDs in default VPC"
+  value       = data.aws_subnets.all_default.ids
+}
+
+output "eks_supported_subnet_ids" {
+  description = "EKS-supported subnet IDs"
+  value       = local.eks_supported_subnet_ids
+}
+
+output "subnet_az_mapping" {
+  description = "Mapping of subnet IDs to availability zones"
+  value = {
+    for subnet in data.aws_subnet.all_default : subnet.id => subnet.availability_zone
+  }
 }
