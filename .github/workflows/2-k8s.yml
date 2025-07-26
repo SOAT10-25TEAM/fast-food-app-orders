@@ -130,11 +130,18 @@ jobs:
           
           echo "✅ Application deployed"
 
+      - name: Restart application to pick up config changes
+        run: |
+          echo "🔄 Restarting application to apply configuration changes..."
+          kubectl rollout restart deployment/soat-app
+          kubectl rollout status deployment/soat-app --timeout=300s
+          echo "✅ Application restarted"
+
       - name: Wait for deployments
         run: |
           echo "⏳ Waiting for deployments to be ready..."
-          kubectl wait --for=condition=available --timeout=300s deployment/mysql-deployment || true
-          kubectl wait --for=condition=available --timeout=300s deployment/node-deployment || true
+          kubectl wait --for=condition=available --timeout=300s deployment/mysql || true
+          kubectl wait --for=condition=available --timeout=300s deployment/soat-app || true
           echo "✅ Deployments ready"
 
       - name: Deployment Status
