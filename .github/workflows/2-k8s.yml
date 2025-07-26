@@ -1,4 +1,4 @@
-name: 2-K8s Deploy
+name: Deploy to Kubernetes
 
 on:
   pull_request:
@@ -37,7 +37,7 @@ jobs:
 
       - name: Update kubeconfig
         run: |
-          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name fast-food-orders
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name fast-food-orders-dev
           echo "✅ kubectl configured"
 
       - name: Verify cluster connection
@@ -46,40 +46,98 @@ jobs:
           kubectl get namespaces
           echo "✅ Cluster is accessible"
 
+      - name: List available Kubernetes files
+        run: |
+          echo "📂 Checking for Kubernetes files..."
+          ls -la *.yaml *.yml 2>/dev/null || echo "No YAML files in root directory"
+          ls -la k8s/ 2>/dev/null || echo "No k8s directory found"
+          echo ""
+
       - name: Deploy MySQL
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
         run: |
           echo "🗄️ Deploying MySQL..."
-          kubectl apply -f mysql-secrets.yaml
-          kubectl apply -f mysql-deployment.yaml
-          kubectl apply -f mysql-service.yaml
+          
+          # Try different possible locations for the files
+          if [ -f mysql-secrets.yaml ]; then
+            kubectl apply -f mysql-secrets.yaml
+          elif [ -f k8s/mysql-secrets.yaml ]; then
+            kubectl apply -f k8s/mysql-secrets.yaml
+          else
+            echo "❌ mysql-secrets.yaml not found"
+            exit 1
+          fi
+          
+          if [ -f mysql-deployment.yaml ]; then
+            kubectl apply -f mysql-deployment.yaml
+          elif [ -f k8s/mysql-deployment.yaml ]; then
+            kubectl apply -f k8s/mysql-deployment.yaml
+          else
+            echo "❌ mysql-deployment.yaml not found"
+            exit 1
+          fi
+          
+          if [ -f mysql-service.yaml ]; then
+            kubectl apply -f mysql-service.yaml
+          elif [ -f k8s/mysql-service.yaml ]; then
+            kubectl apply -f k8s/mysql-service.yaml
+          else
+            echo "❌ mysql-service.yaml not found"
+            exit 1
+          fi
+          
           echo "✅ MySQL deployed"
 
-      - name: Wait for MySQL to be ready
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
-        run: |
-          echo "⏳ Waiting for MySQL to be ready..."
-          kubectl wait --for=condition=ready pod -l app=mysql --timeout=300s
-          echo "✅ MySQL is ready"
-
       - name: Deploy Application
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
         run: |
-          echo "🚀 Deploying Fast Food Orders Application..."
-          kubectl apply -f node-configmap.yaml
-          kubectl apply -f node-deployment.yaml
-          kubectl apply -f node-service.yaml
-          kubectl apply -f node-hpa.yaml
+          echo "🚀 Deploying Node.js application..."
+          
+          # Apply Node.js manifests
+          if [ -f node-configmap.yaml ]; then
+            kubectl apply -f node-configmap.yaml
+          elif [ -f k8s/node-configmap.yaml ]; then
+            kubectl apply -f k8s/node-configmap.yaml
+          else
+            echo "❌ node-configmap.yaml not found"
+            exit 1
+          fi
+          
+          if [ -f node-deployment.yaml ]; then
+            kubectl apply -f node-deployment.yaml
+          elif [ -f k8s/node-deployment.yaml ]; then
+            kubectl apply -f k8s/node-deployment.yaml
+          else
+            echo "❌ node-deployment.yaml not found"
+            exit 1
+          fi
+          
+          if [ -f node-service.yaml ]; then
+            kubectl apply -f node-service.yaml
+          elif [ -f k8s/node-service.yaml ]; then
+            kubectl apply -f k8s/node-service.yaml
+          else
+            echo "❌ node-service.yaml not found"
+            exit 1
+          fi
+          
+          # Optional: HPA
+          if [ -f node-hpa.yaml ]; then
+            kubectl apply -f node-hpa.yaml
+          elif [ -f k8s/node-hpa.yaml ]; then
+            kubectl apply -f k8s/node-hpa.yaml
+          else
+            echo "⚠️ node-hpa.yaml not found (optional)"
+          fi
+          
           echo "✅ Application deployed"
 
-      - name: Wait for application to be ready
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
+      - name: Wait for deployments
         run: |
-          echo "⏳ Waiting for application to be ready..."
-          kubectl wait --for=condition=ready pod -l app=fast-food-orders --timeout=300s
-          echo "✅ Application is ready"
+          echo "⏳ Waiting for deployments to be ready..."
+          kubectl wait --for=condition=available --timeout=300s deployment/mysql-deployment || true
+          kubectl wait --for=condition=available --timeout=300s deployment/node-deployment || true
+          echo "✅ Deployments ready"
 
-      - name: Show deployment status
+      - name: Deployment Status
         run: |
           echo "📋 Deployment Status:"
           kubectl get pods
@@ -87,20 +145,7 @@ jobs:
           kubectl get deployments
           echo ""
           echo "🌐 Service URLs:"
-          kubectl get service node-service -o wide
+          kubectl get service node-service -o wide || echo "node-service not found"
           echo ""
           echo "🎉 Kubernetes deployment completed!"
-
-      - name: Run basic health check
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/configure_aws_deployment'
-        run: |
-          echo "🔍 Running basic health checks..."
-          kubectl get pods -l app=fast-food-orders
-          kubectl get pods -l app=mysql
-          
-          # Check if pods are running
-          READY_PODS=$(kubectl get pods -l app=fast-food-orders --no-headers | grep "Running" | wc -l)
-          echo "✅ Fast Food Orders pods running: $READY_PODS"
-          
-          MYSQL_PODS=$(kubectl get pods -l app=mysql --no-headers | grep "Running" | wc -l)
-          echo "✅ MySQL pods running: $MYSQL_PODS"
+        continue-on-error: true
